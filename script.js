@@ -1,45 +1,53 @@
 document.addEventListener('DOMContentLoaded', () => {
+    let questions = [];
+    let current = 0;
+    let score = 0;
+
+    const chat = document.getElementById('chat');
+    const optionsDiv = document.getElementById('options');
+    const nextBtn = document.getElementById('next-btn');
+
     fetch('questions.json')
         .then(res => res.json())
         .then(data => {
-            const form = document.getElementById('quiz-form');
-            data.questions.forEach((q, idx) => {
-                const fieldset = document.createElement('fieldset');
-                const legend = document.createElement('legend');
-                legend.textContent = q.question;
-                fieldset.appendChild(legend);
-                q.options.forEach(opt => {
-                    const label = document.createElement('label');
-                    const radio = document.createElement('input');
-                    radio.type = 'radio';
-                    radio.name = `question${idx}`;
-                    radio.value = opt;
-                    label.appendChild(radio);
-                    label.appendChild(document.createTextNode(opt));
-                    fieldset.appendChild(label);
-                    fieldset.appendChild(document.createElement('br'));
-                });
-                form.appendChild(fieldset);
-            });
+            questions = data.questions;
+            showQuestion();
         });
 
-    document
-        .getElementById('submit-btn')
-        .addEventListener('click', e => {
-            e.preventDefault();
-            fetch('questions.json')
-                .then(res => res.json())
-                .then(data => {
-                    let score = 0;
-                    data.questions.forEach((q, idx) => {
-                        const selector = `input[name=question${idx}]:checked`;
-                        const selected = document.querySelector(selector);
-                        if (selected && selected.value === q.answer) {
-                            score++;
-                        }
-                    });
-                    document.getElementById('result').textContent =
-                        `You scored ${score} of ${data.questions.length}.`;
-                });
+    function showQuestion() {
+        const q = questions[current];
+        chat.textContent = q.question;
+        optionsDiv.innerHTML = '';
+        q.options.forEach(opt => {
+            const label = document.createElement('label');
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = 'answer';
+            radio.value = opt;
+            label.appendChild(radio);
+            label.appendChild(document.createTextNode(opt));
+            optionsDiv.appendChild(label);
+            optionsDiv.appendChild(document.createElement('br'));
         });
+    }
+
+    nextBtn.addEventListener('click', () => {
+        const selected = document.querySelector('input[name=answer]:checked');
+        if (!selected) {
+            return;
+        }
+        if (selected.value === questions[current].answer) {
+            score++;
+        }
+        current++;
+        if (current < questions.length) {
+            showQuestion();
+        } else {
+            chat.textContent = '';
+            optionsDiv.innerHTML = '';
+            nextBtn.disabled = true;
+            document.getElementById('result').textContent =
+                `You scored ${score} of ${questions.length}.`;
+        }
+    });
 });
